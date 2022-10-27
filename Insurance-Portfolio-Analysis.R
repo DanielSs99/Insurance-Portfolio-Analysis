@@ -1,7 +1,7 @@
 # library ---------------------------------------------------------------------
 pacman::p_load(tidyverse, readxl, ggmap)
 # Data ------------------------------------------------------------------------
-Dt <- read.csv('fl_insurance_portfolio_data.csv')
+Dt <- read.csv("C:/Users/aulainformatica/Desktop/fl_insurance_portfolio_data.csv")
 # Info of Dataset -------------------------------------------------------------
 class(Dt); names(Dt); str(Dt); head(Dt, 10)
 dim(Dt); sum(is.na(Dt))
@@ -48,12 +48,18 @@ top_destinations %>%
     title = "Save as image"
   )
 
+
+
+
+
 # Maps ------------------------------------------------------------------------
 bc_box <- make_bbox(Longitude, Latitude, Dt)
 bc_box
 bc_big <- get_map(location = bc_box, source = "google", maptype = "terrain")
 ggmap(bc_big) +
   geom_point(data = Dt, mapping = aes(x = Longitude, y = Latitude, color = Line))
+
+
 
 states <- map_data("state")
 west_coast <- subset(states, region %in% c("florida"))
@@ -92,6 +98,13 @@ elbow_room1
 
 
 library(mapdeck)
+
+
+key <- 'pk.eyJ1IjoiZHNhcm1pZW50b3NzIiwiYSI6ImNsOXI0Y2x5dDBleW4zdHFtZG84ODB4cGIifQ.OozGCV6HYSZ-3Q_mhzd4Eg'    
+mapdeck(token = key)
+
+
+
 set_token(Sys.getenv("MAPBOX"))
 crash_data = read.csv("https://git.io/geocompr-mapdeck")
 crash_data = na.omit(crash_data)
@@ -121,3 +134,56 @@ mapdeck( style = mapdeck_style('dark'), pitch = 45 ) %>%
     , colour_range = colourvalues::colour_values(1:6, palette = "inferno")
   )
 
+
+
+
+library(echarts4r.maps)
+
+df <- data.frame(
+  region = c("Florida"), 
+  value = c(1)
+)
+
+e_charts(region) |>
+  em_map("Usa") |> 
+  e_map(value, map = "Usa") |> 
+  e_visual_map(value) |> 
+  e_theme("infographic")
+
+library(dplyr)
+Dt %>%
+  filter(Construction == 'Wood' & County == 'Clay') 
+
+
+ggplot(Dt) + aes(x = TIV.2020) + geom_point()
+
+plot(log(Dt$TIV.2020))
+
+
+
+
+Dt %>% 
+  group_by(Construction) %>% 
+  e_charts(TIV.2020)%>% 
+  e_effect_scatter(TIV.2020, Growth.Rate)
+
+
+
+
+datasets::mtcars
+
+
+Dt %>% 
+  head() %>% 
+  e_charts(Line) %>% 
+  e_pie(TIV.2020, roseType = "radius")
+
+
+
+
+Dt %>% 
+  head() %>% 
+  dplyr::mutate(model = row.names(.)) %>% 
+  e_charts(Line) %>% 
+  e_pie(TIV.2020, radius = c("50%", "70%")) %>% 
+  e_title("Donut chart")
