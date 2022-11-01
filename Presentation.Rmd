@@ -1,0 +1,277 @@
+---
+title: "Analisis Portafolio de Seguros - Florida"
+subtitle: 'Industria Contrucciones'
+author: "Daniel Ricardo Sarmiento"
+institute: 'Universidad El Bosque'
+date: "`r Sys.Date()`"
+output:
+  xaringan::moon_reader:
+    css: [default, metropolis, metropolis-fonts]
+    lib_dir: libs
+    nature:
+      highlightStyle: arta
+      highlightlines: true
+      countIncrementalSlides: false
+---
+
+```{r setup, include=FALSE}
+options(
+  htmltools.dir.version =  FALSE,
+  htmltools.preserve.raw = FALSE
+)
+```
+
+
+# Introduccion
+
+Los datos fueron tamados para los años 2020 - 2021 en el estado de la florida, estos decriben las caracteristicas de un portafilio de seguros en donde se indexan las siguientes variable:
+<p></p>
+<ul>
+<li> PolicyID: Indetificacion del Asegurado
+<li> Line: Tipo de Construccion (Residencial - Comercial)
+<li> Contruction: Material Principal de Construccion () 
+<li> County: 
+<li> Ubicacion: Tipo de coordenad (Longitude - Latitude)
+<li> TIV.2020: Valor Total del Seguro 2020
+<li> TIV.2021: Valor Total del Seguro 2021
+<li> Growth Rate: 
+</ul>
+
+1. ¿Cuál es la pérdida esperada de una cartera de asegurados durante el próximo año?
+2. Dado el estado actual de los asegurados en cartera, ¿cuánto se podría perder en un año realmente malo?
+
+---
+# Estructura del Portafolio 2020 
+
+```{r include=FALSE}
+pacman::p_load(tidyverse, lubridate, echarts4r, prophet)
+```
+
+```{r include=FALSE}
+data <- read.csv('fl_insurance_portfolio_data.csv')
+```
+
+```{r echo=FALSE}
+const <- data |> 
+  select(Construction, TIV.2020) |>
+  group_by(Construction) |>
+  summarise(TIV.2020 = sum(TIV.2020))
+
+const1 <- data.frame(Cons = const$Construction, Value = const$TIV.2020) 
+
+g1 <- const1 |> 
+  head() |> 
+  e_charts(Cons) |> 
+  e_pie(Value) |> 
+  e_theme("dark")
+
+g1
+```
+---
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+library(moments)
+library(kableExtra)
+library(knitr)
+library(pander)
+
+Modes <- function(x) {
+  ux <- unique(x)
+  tab <- tabulate(match(x, ux))
+  ux[tab == max(tab)]
+}
+
+data |>
+  select(TIV.2020) |>
+  summarise(Media = mean(TIV.2020), Desviacion = sd(TIV.2020), Asimetria = skewness(TIV.2020), Mediana = median(TIV.2020), Mo = Modes(TIV.2020) ) |>
+  pander(style='rmarkdown')
+```
+```{r echo=FALSE}
+data |>
+  group_by(Construction) |>
+  e_charts(timeline = TRUE) |>
+  e_histogram(TIV.2020, name = "histogram") |>
+  e_density(TIV.2020, name = "density", y_index = 1) |> 
+  e_theme("dark")
+```
+
+---
+# Estructura del Portafolio 2021
+```{r echo=FALSE, warning=FALSE, message=FALSE}
+
+constP <- data |> 
+  select(Construction, TIV.2021) |>
+  group_by(Construction) |>
+  summarise(TIV.2021 = sum(TIV.2021))
+
+const1p <- data.frame(Cons = constP$Construction, Value = constP$TIV.2021) 
+
+g2 <- const1p |> 
+  head() |> 
+  e_charts(Cons) |> 
+  e_pie(Value) |> 
+  e_theme("dark")
+g2
+```
+---
+
+```{r echo=FALSE}
+library(pander)
+library(moments)
+
+Modes <- function(x) {
+  ux <- unique(x)
+  tab <- tabulate(match(x, ux))
+  ux[tab == max(tab)]
+}
+
+data |>
+  select(TIV.2021) |>
+  summarise(Media = mean(TIV.2021), Desviacion = sd(TIV.2021), Asimetria = skewness(TIV.2021), Mediana = median(TIV.2021), Mo = Modes(TIV.2021) ) |>
+  pander(style='rmarkdown')
+
+data |>
+  group_by(Construction) |>
+  e_charts(timeline = TRUE) |>
+  e_histogram(TIV.2021, name = "histogram") |>
+  e_density(TIV.2021, name = "density", y_index = 1) |> 
+  e_theme("dark")
+```
+---
+
+<center>
+```{r echo=FALSE, message=FALSE, warning=FALSE, size="huge"}
+
+library(mapdeck)
+library(viridisLite)
+
+key <- 'pk.eyJ1IjoiZHNhcm1pZW50b3NzIiwiYSI6ImNsOXI0Y2x5dDBleW4zdHFtZG84ODB4cGIifQ.OozGCV6HYSZ-3Q_mhzd4Eg'    
+
+set_token(key) 
+
+g3 <- mapdeck(
+  style = mapdeck_style('light')
+  , pitch = 45
+  , zoom = 10
+  , location = c(27.5320107, -88.3009467)
+  ) |>
+  add_grid(
+  data = data
+  , lat = "Latitude"
+  , lon = "Longitude"
+  , cell_size = 5000
+  , elevation_scale = 50
+  , layer_id = "grid_layer"
+    )
+g3
+```
+</center>
+---
+# ¿Cuál es la pérdida esperada?
+
+Para ilustrar cómo funcionaría esto para un solo asegurador, fijemos la PD para nuestro portafolio en 5% y ejecutemos la simulación usando el factor latente Xi para determinar cuántas veces en M iteraciones obtenemos una reclamacion. Notaremos que cuando M es pequeño, la tasa de reclamacion probablemente no sea del 8%, pero a medida que M aumenta, comenzaremos a aproximarnos al 8% (es decir, a largo plazo, nuestra tasa de reclamo convergerá con la tasa esperada)
+
+```{r include=FALSE}
+# Monte Carlo 
+M <- 10000  
+## Definicion de variables
+rho <- 0.09    ## factor de correlación de la cartera... suponiendo 0,09 para la prueba
+X <- numeric(M)
+threshold <- numeric(M)
+iteration <- numeric(M)
+set.seed(777)
+Z <- rnorm(M, mean=0, sd=1)   ## generando un factor de riesgo común
+Zvar <- rnorm(M, mean=0, sd=1)  ##cambiando N factores
+  for (m in 1:M) {
+    iteration[m] <- m
+    X[m] <- sqrt(rho)*Z[m] + sqrt(1-rho)*Zvar[m]
+    threshold[m] <- qnorm(0.08, mean=0, sd=1)  ## PD 8%
+    }
+sim <- as.data.frame(cbind(iteration,X,threshold))
+sim <- mutate(sim, Default = (X < threshold))
+```
+
+<center>
+```{r echo=FALSE, message=FALSE, warning=FALSE, fig.height=4, fig.width=10}
+library(ggplot2)
+library(cowplot)
+p <- qplot(iteration, X, data=sim[1:20,],) + geom_hline(aes(yintercept=threshold[1]), size=1, linetype="dotted") + 
+  geom_point(aes(colour=factor(Default)), size=2) +
+  labs(title="Ilustración del umbral predeterminado para el Portafolio", x="Iteración", y="Valor de X") +
+  theme(plot.title = element_text(hjust = 0.5))
+
+p1 <- qplot(iteration, X, data=sim,) + geom_hline(aes(yintercept=threshold[1]), size=1, linetype="dotted") + 
+  geom_point(aes(colour=factor(Default)), size=2) +
+  labs(title="", x="Iteración", y="Valor de X")
+
+gridExtra::grid.arrange(p, p1, nrow = 2)
+```
+<center>
+---
+
+```{r include=FALSE, size="huge"}
+
+N <- 1000
+ID <- seq(from=1, to=N, by = 1)
+PD <- rep_len(c(0.00001, 0.01, 0.08, 0.0002), length.out = N)
+LGD <- rep(.5, N)
+EAD <- rep(1000000, N)
+Portfolio <- data.frame(ID, PD, LGD, EAD)
+
+```
+
+```{r include=FALSE}
+
+N <- dim(Portfolio)[1]  ## gives us the number of loans in the dataset
+rho <- 0.09    ## sets the portfolio correlation to be used in the simulation
+M <- 20000   ## number of iterations
+x <-numeric(M)   ## initializes loss vector
+rate <- numeric(M)  #
+
+set.seed(778)  
+for (m in 1:M) {
+    Loss <- 0
+    DefaultCount <- 0
+    DefaultRate <- 0
+  
+    Z <- rnorm(1, mean=0, sd=1)   ## generating common risk factor
+    Zvar <- rnorm(N, mean=0, sd=1)  ## generating N idiosyncratic risk factors
+  
+    for (i in 1:N) {
+      X <- sqrt(rho)*Z + sqrt(1-rho)*Zvar[i]   ## evaluating X for each loan i
+      threshold <- qnorm(Portfolio$PD[i], mean=0, sd=1)   ## setting loan i's default threshold 
+      if (X < threshold) {
+        Loss <- Loss + Portfolio$LGD[i]*Portfolio$EAD[i]   ## maintaining a running total of Losses
+        DefaultCount <- DefaultCount + 1      ## counting +1 for a defaulted loan
+        }
+      DefaultRate <- DefaultCount/N
+      }
+    x[m] <- Loss       ## capturing total portfolio loss per iteration
+    rate[m] <- DefaultRate     ## capturing total default rate per iteration
+    }
+```
+
+
+```{r include=FALSE}
+ExpectedLoss <- sum(PD*LGD*EAD)
+ExpectedLoss
+```
+
+```{r include=FALSE}
+SimMean <- mean(x)
+SimMean
+```
+```{r echo=FALSE}
+resul <- data.frame(PerdidaE = ExpectedLoss, MediaE = SimMean)
+pander( resul,style='rmarkdown')
+```
+
+```{r echo=FALSE, size="huge"}
+dath <- data.frame(x = x)
+
+ggplot(dath) +  aes(x = x, y =..density..) + geom_density(fill = "blue") +
+  ggtitle('Distribucion de perdidad del Portafolio') +
+  theme(plot.title = element_text(hjust = 0.5)) +
+  labs(x = 'Potencial de perdida en un año')
+```
+
