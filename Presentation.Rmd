@@ -63,7 +63,7 @@ g1 <- const1 |>
   head() |> 
   e_charts(Cons) |> 
   e_pie(Value) |> 
-  e_theme("dark")
+  e_theme("azul")
 
 g1
 ```
@@ -92,7 +92,7 @@ data |>
   e_charts(timeline = TRUE) |>
   e_histogram(TIV.2020, name = "histogram") |>
   e_density(TIV.2020, name = "density", y_index = 1) |> 
-  e_theme("dark")
+  e_theme("azul")
 ```
 
 ---
@@ -110,7 +110,7 @@ g2 <- const1p |>
   head() |> 
   e_charts(Cons) |> 
   e_pie(Value) |> 
-  e_theme("dark")
+  e_theme("azul")
 g2
 ```
 ---
@@ -135,7 +135,7 @@ data |>
   e_charts(timeline = TRUE) |>
   e_histogram(TIV.2021, name = "histogram") |>
   e_density(TIV.2021, name = "density", y_index = 1) |> 
-  e_theme("dark")
+  e_theme("azul")
 ```
 ---
 
@@ -265,13 +265,33 @@ SimMean
 resul <- data.frame(PerdidaE = ExpectedLoss, MediaE = SimMean)
 pander( resul,style='rmarkdown')
 ```
-
-```{r echo=FALSE, size="huge"}
+<center>
+```{r echo=FALSE, size="huge", message=FALSE, warning=FALSE}
+library(plotly)
 dath <- data.frame(x = x)
 
-ggplot(dath) +  aes(x = x, y =..density..) + geom_density(fill = "blue") +
+ggplot(dath) +  aes(x = x, y =..density..) + geom_density(fill = "orange") +
   ggtitle('Distribucion de perdidad del Portafolio') +
   theme(plot.title = element_text(hjust = 0.5)) +
-  labs(x = 'Potencial de perdida en un año')
+  labs(x = 'Potencial de perdida en un año') +
+  theme_classic()
 ```
+<center>
+---
+<center>
+```{r echo=FALSE, size="huge"}
+dath <- data.frame(x = rate)
+
+ggplot(dath) +  aes(x = rate, y =..density..) + geom_density(fill = "green") +
+  ggtitle('Distribucion de perdidad del Portafolio') +
+  theme(plot.title = element_text(hjust = 0.5)) +
+  labs(x = 'Potencial de maxima perdida en un año') +
+  theme_classic()
+```
+<center>
+
+
+
+
+
 
