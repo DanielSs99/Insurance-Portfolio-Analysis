@@ -1,0 +1,369 @@
+---
+title: Insurance Portfolio Analysis in the State of Florida
+author:
+  - name: Daniel Ricardo Sarmiento
+    email: dsarmientosar@unbosque.edu.co
+    affiliation: Universidad El Bosque
+    correspondingauthor: true
+    footnote: 1
+address:
+  - code: Some Institute of Technology
+    address: Bogota D.C , Colombia
+footnote:
+  - code: 1
+    text: "Database Design and Analysis"
+
+abstract: |
+  Insurers have and manage portfolios that are simply a set of policies, in this article we seek to
+  analyze a portfolio that contains policies designed and acquired by the construction sector in the
+  essential objective is to make proposals that may benefit the insurance sector according to the information contained in the Dataset.
+keywords: 
+  - keyword1
+  - keyword2
+journal: "An awesome journal"
+date: "`r Sys.Date()`"
+classoption: preprint, 3p, authoryear
+# bibliography: mybibfile.bib
+linenumbers: false
+numbersections: true
+# Use a CSL with `citation_package = "default"`
+# csl: https://www.zotero.org/styles/elsevier-harvard
+# geometry: "left=3cm,right=3cm,top=2cm,bottom=2cm"
+output: 
+  rticles::elsevier_article:
+    keep_tex: true
+    citation_package: natbib
+# geometry: margin=2.54cm
+header-includes:
+  - \geometry{hmargin=2.5cm}
+---
+
+1.  **Introduction**
+
+Strategic decisions do not occur at the contract level. They occur in the boardroom, where managers review available data and possibly launch new strategies. From a portfolio perspective, insurers want to plan their capacity, establish management policies, and balance the mix of products being distributed to increase revenue while controlling volatility.
+
+Conceptually, one can think of an insurance company as nothing more than a collection, or portfolio, of insurance contracts. It has been learned about the modeling of insurance portfolios as the sum of individual contracts, taking into account hypotheses of independence between the contracts. Given their importance, this chapter focuses squarely on portfolio distributions.
+
+-   Insurance portfolios represent the obligations of insurers and, therefore, are particularly interested in the probabilities of large risks.
+
+-   Insurance portfolios represent the company's obligations and therefore insurers maintain an equivalent amount of assets to meet those obligations. Risk Measures summarize the distribution of the insurance portfolio and are used to quantify the amount of assets that an insurer needs to have to meet its obligations.
+
+    With the available dataset we seek to answer the questions posed above in addition to being able to present a spatial analysis of the available information in search of possible patterns that allow us to make decisions related to the improvement of the portfolio.
+
+-   **Theoretical framework**
+
+    The traditional approach to modeling the distribution of aggregate losses begins by separately fitting a frequency distribution to the number of losses and a severity distribution to the size of the losses. The estimated aggregate loss distribution combines the distribution for the frequency and the distribution for the severity of convolution losses.
+
+    Discrete distributions, often referred to as count distributions or frequency distributions, to describe the number of events, such as the number of driver accidents or the number of insured claims. Lifetimes, asset values, losses and claims sizes are often modeled as continuous random variables and as such are modeled using continuous distributions, often referred to as loss or severity distributions. A mixed distribution is a weighted combination of simpler distributions that is used to model an investigated phenomenon in a heterogeneous population, such as modeling more than one type of liability insurance claim (small but frequent claims and large but relatively rare claims). . This explores the use of continuous and mixed distributions to model the random size of losses. Key attributes are presented that characterize continuous models and that are also a means to create new distributions from existing ones. The effect of coverage modifications is also explored.
+
+-   *Moment generating function.*
+
+    The moment generating function, denoted by $M_x(t)$ uniquely characterizes the distribution of $x$.While it is possible for two different distributions to have the same moments and still be different, this is not the case with the moment generating function. That is, if two random variables have the same moment generating function, then they have the same distribution. The moment generating function is given by
+
+$$
+M_x(t)=E(e^{tx})=\int_0 ^\infty e^{tx}f_x(x)dx 
+$$
+
+for all t for which the expected value exists. The moment generating function is a real function for which the
+
+kth derivative at zero is equal to the kth ordinary moment of X. In symbols, this is:
+
+$$
+\frac{d^k}{dt^k}M_x(t)|_{t=0}=E(X^k)
+$$
+
+-   *Continuous Distributions to Model the Severity of Losses*
+
+    The definition and application of four fundamental distributions for severity will be presented:
+
+    1.  **Gamma**
+
+        The traditional approach to loss modeling is to fit separate models for frequency and severity.
+
+        Let $X$ be a continuous variable and have a gamma distribution with form parameter a and scale parameter O if its probability density function is given by
+
+        $$
+        f_x(x)=\frac{(x/\theta)^\alpha}{x\gamma(\alpha)}e^{-x/\theta}
+        $$
+
+        ```{r warning=FALSE, message=FALSE, echo=FALSE,  fig.width=5, fig.height=3}
+        par(mfrow=c(1, 2), mar = c(4, 4, .1, .1))
+
+        # Densidades gamma con escala variable
+        scaleparam <- seq(100, 250, by = 50)
+        shapeparam <- 2:5
+        x <- seq(0, 1000, by = 1)
+        fgamma <- dgamma(x, shape = 2, scale = scaleparam[1])
+        plot(x, fgamma, type = "l", ylab = "Density gamma")
+        for(k in 2:length(scaleparam)){
+          fgamma <- dgamma(x,shape = 2, scale = scaleparam[k])
+          lines(x,fgamma, col = k)
+        }
+        legend("topright", c("sle=100", "sle=150", "sle=200", "sle=250"), lty=1, col = 1:4)
+
+        # Densidades gamma con forma variable
+        fgamma <- dgamma(x, shape = shapeparam[1], scale = 100)
+        plot(x, fgamma, type = "l", ylab = "Density gamma")
+        for(k in 2:length(shapeparam)){
+          fgamma <- dgamma(x,shape = shapeparam[k], scale = 100)
+          lines(x,fgamma, col = k)
+        }
+        legend("topright", c("spe=2", "spe=3", "spe=4", "spe=5"), lty=1, col = 1:4)
+        ```
+
+2.  **Pareto**
+
+    The Pareto distribution, named after the Italian economist Vilfredo Pareto (1843-1923), has many economic and financial applications.
+
+    The continuous variable $X$ is said to have a Pareto distribution with shape parameter $\alpha$ and scale parameter $\theta$ if its pdf is given by $$
+    f_x(x)=\frac{\alpha\theta^{\alpha}}{(x+\theta)^{\alpha+1}}
+    $$
+
+    ```{r warning=FALSE, message=FALSE, echo=FALSE,  fig.width=5, fig.height=3}
+    library(VGAM)
+
+    par(mfrow=c(1, 2), mar = c(4, 4, .1, .1))
+
+    # Densidades Pareto con forma variable
+    x <- seq(1, 3000, by = 1)
+    scaleparam <- seq(2000, 3500, 500)
+    shapeparam <- 1:4
+
+    # variando el parámetro de forma
+    plot(x, dparetoII(x, loc=0, shape = shapeparam[1], scale = 2000), ylim=c(0,0.002),type = "l", ylab = "Pareto density")
+    for(k in 2:length(shapeparam)){
+      lines(x, dparetoII(x, loc=0, shape = shapeparam[k], scale = 2000), col = k)
+    }
+    legend("topright", c(expression(alpha~'=1'), expression(alpha~'=2'), expression(alpha~'=3'), expression(alpha~'=4')), lty=1, col = 1:4)
+
+    # Densidades de Pareto con escala variable
+    plot(x, dparetoII(x, loc=0, shape = 3, scale = scaleparam[1]), type = "l", ylab = "Pareto density")
+    for(k in 2:length(scaleparam)){
+      lines(x, dparetoII(x, loc=0, shape = 3, scale = scaleparam[k]), col = k)
+    }
+    legend("topright", c(expression(theta~'=2000'), expression(theta~'=2500'), expression(theta~'=3000'), expression(theta~'=3500')), lty=1, col = 1:4)
+    ```
+
+3.  **Weibull**
+
+    The Weibull distribution, named after the Swedish physicist Waloddi Weibull (1887-1979), is widely used in reliability, life time analysis, weather forecasting, and general insurance claims
+
+    for the frequency of claims and the gamma distribution for the severity. An alternative approach to loss modeling that has recently gained popularity is to create a single model for pure premium (average cost of claims).
+
+```{r warning=FALSE, message=FALSE, echo=FALSE,  fig.width=5, fig.height=3}
+par(mfrow=c(1, 2), mar = c(4, 4, .1, .1))
+
+# Densidad Weibull con escala variable
+z<- seq(0,400,by=1)
+scaleparam <- seq(50,200,50)
+shapeparam <- seq(1.5,3,0.5)
+plot(z, dweibull(z, shape = 3, scale = scaleparam[1]), type = "l", ylab = "Densidad Weibull")
+for(k in 2:length(scaleparam)){
+  lines(z,dweibull(z,shape = 3, scale = scaleparam[k]), col = k)}
+legend("topright", c("scale=50", "scale=100", "scale=150", "scale=200"), lty=1, col = 1:4)
+
+# Densidad Weibull con forma variable
+plot(z, dweibull(z, shape = shapeparam[1], scale = 100), ylim=c(0,0.012), type = "l", ylab = "Densidad Weibull ")
+for(k in 2:length(shapeparam)){
+  lines(z,dweibull(z,shape = shapeparam[k], scale = 100), col = k)}
+legend("topright", c("shape=1.5", "shape=2", "shape=2.5", "shape=3"), lty=1, col = 1:4)
+```
+
+-   **Analysis**
+
+The data was taken for the years 2020 - 2021 in the state of Florida, these describe the characteristics of an insurance portfolio where the following variables are indexed:
+
+| Variable     | Description                                     |
+|--------------|-------------------------------------------------|
+| PolicyID:    | Identification of the Insured                   |
+| Line:        | Type of Construction (Residential - Commercial) |
+| Contruction: | Main Material of Construction ()                |
+| County:      |                                                 |
+| Ubicacion:   | Type of coordinates (Longitude - Latitude)      |
+| TIV.2020:    | Total Insurance Value 2020                      |
+| TIV.2020:    | Total Insurance Value 2021                      |
+| Growth Rate: |                                                 |
+
+1.  *Descriptive dataset analysis*
+
+ 
+
+```{r echo=FALSE, message=FALSE, warning=FALSE, size="huge"}
+library(skimr)
+library(tidyverse)
+library(moments)
+library(kableExtra)
+data <- read.csv('fl_insurance_portfolio_data.csv')
+data |>
+  group_by(Construction) |>
+  summarise(Mean = mean(TIV.2020), Sd = sd(TIV.2020), Sk = skewness(TIV.2020), Total = sum(TIV.2020)) |>
+  kbl()
+```
+
+ 
+
+ 
+
+We can see the basic descriptions related to the central moments and the asymmetry of our portfolio depending on the type of main material that the construction is made of.
+
+ 
+
+ 
+
+```{r echo=FALSE, warning=FALSE, message=FALSE, fig.width=5, fig.height=3}
+library(ggplot2)
+library(ggridges)
+library(ggjoy)
+ggplot(data,aes(x = log(TIV.2020),y = Construction)) + 
+  geom_joy(rel_min_height = 0.01) +        
+  scale_y_discrete(expand = c(0.01, 0)) +     
+  labs(x="Total Length (mm)",y="Year") +
+  theme_bw()
+```
+
+ 
+
+ 
+
+For the year 2020 we can show how the distributions according to the type of construction material are quite different from each other in all senses such as asymmetry and centrality, since it would not be correct to assume that the distributions are indented, for the above by means of the generating function At times we would not obtain a real representation of the distribution of the portfolio.
+
+```{r echo=FALSE, message=FALSE, warning=FALSE, size="huge"}
+data |>
+  group_by(Construction) |>
+  summarise(Mean = mean(TIV.2021), Sd = sd(TIV.2021), Sk = skewness(TIV.2021), Total = sum(TIV.2021)) |>
+  kbl()
+```
+
+ 
+
+ 
+
+```{r echo=FALSE, warning=FALSE, message=FALSE, fig.width=5, fig.height=3}
+ggplot(data,aes(x = log(TIV.2021),y = Construction)) + 
+  geom_joy(rel_min_height = 0.01) +        
+  scale_y_discrete(expand = c(0.01, 0)) +     
+  labs(x="Total Length (mm)",y="Year") +
+  theme_bw()
+```
+
+ 
+
+For the year 2021 we have the same situation and therefore the same problem, in order to solve this problem it is decided to carry out MonteCarlo processes to approximate the proportion of expected claims, we will model the sum of the random variables through convulsion and finally we will estimate the expected losses for the two years and the expected losses in what would be a bad year.
+
+-   **Vasicek single factor model**
+
+    The critical concept is that, from a banker's perspective and at a fundamental level, a company exists to pay off its debt. When the company's assets fall below debt levels, it can no longer pay its debt and will therefore default. We know that, at a macro level, there is one thing that affects all companies, large and small: the state of the economy. To reflect that fact, we can let Z be a random number drawn from a standard normal distribution (with mean 0 and standard deviation 1) that represents the state of the economy. If we get a high number, then we are in a good economic state, if we get a low number, then we are in a bad economic state. To reflect the idiosyncrasies of an individual firm, we can let Zvar be a random number (also selected from a standard normal distribution with mean 0 and standard deviation 1) specific to firm i.
+
+    When we run enough simulations, the loss scenarios we collect will eventually converge on the expected loss for the portfolio and we can then look at the full loss distribution and associated probabilities for the entire range of losses.
+
+    To illustrate how this would work for a single insured, let's set the PD for our insurer to 5% and run the simulation using the latent factor Xi to determine how many times in M ​​iterations we get a default. We will note that when M is small, the claim rate is probably not 5%, but as M gets higher, we will start to approach 5% (ie, in the long run, our claim rate will converge to the expected rate).
+
+```{r}
+## Monte Carlo 
+M <- 10000  
+## Defining variables
+rho <- 0.09    ## correlation factor of portfolio...assuming at 0.09 for trial
+X <- numeric(M)
+threshold <- numeric(M)
+iteration <- numeric(M)
+set.seed(777)
+Z <- rnorm(M, mean=0, sd=1)   ## generating common risk factor
+Zvar <- rnorm(M, mean=0, sd=1)  
+  for (m in 1:M) {
+    iteration[m] <- m
+    X[m] <- sqrt(rho)*Z[m] + sqrt(1-rho)*Zvar[m]
+    threshold[m] <- qnorm(0.05, mean=0, sd=1)  ## PD set at 5%
+    }
+sim <- as.data.frame(cbind(iteration,X,threshold))
+library(dplyr)
+sim <- mutate(sim, Default = (X < threshold))
+```
+
+```{r echo=FALSE, message=FALSE, warning=FALSE, fig.width=5, fig.height=5}
+library(ggplot2)
+library(cowplot)
+p <- qplot(iteration, X, data=sim[1:20,],) + geom_hline(aes(yintercept=threshold[1]), size=1, linetype="dotted") + 
+  geom_point(aes(colour=factor(Default)), size=2) +
+  labs(title="Illustration of the default threshold for the Portfolio", x="Iteración", y="Valor de X") +
+  theme(plot.title = element_text(hjust = 0.5)) +
+  theme_bw()
+
+p1 <- qplot(iteration, X, data=sim,) + geom_hline(aes(yintercept=threshold[1]), size=1, linetype="dotted") + 
+  geom_point(aes(colour=factor(Default)), size=2) +
+  labs(title="", x="Iteración", y="Valor de X") +
+  theme_bw()
+
+gridExtra::grid.arrange(p, p1, nrow = 2)
+```
+
+```{r echo=TRUE}
+drate2 <- sum(sim$Default)/(dim(sim)[1])
+drate2
+```
+
+The default rate after running many iterations is now 0.0504. And all the default events are indicated in light blue. As we compute the simulation for all the borrowers in the portfolio we can expect the same result as we've seen here for one borrower.
+
+-   **Data Preparation**
+
+    The first step is to read in our prepared portfolio that it has a PD, LGD and EAD for each policyholder and verify the final product. For illustrative purposes. The development of PDs and LGDs is not covered here, but PDs are taken from the historical risk grade transition matrix and historical loss LGDs and assigned to each insured in the portfolio according to their risk grade and/or industry.
+
+    ```{r}
+    N <- 1000
+    ID <- seq(from=1, to=N, by = 1)
+    PD <- rep_len(c(0.00001, 0.01, 0.08, 0.0002), length.out = N)
+    LGD <- rep(.5, N)
+    EAD <- rep(1000000, N)
+    Portfolio <- data.frame(ID, PD, LGD, EAD)
+    ```
+
+    |      |                                                  |
+    |------|--------------------------------------------------|
+    | N    | is the number of loans in the portfolio          |
+    | rho  | Is the portfolio correlatio                      |
+    | M    | Is the number of iterations in the simulation    |
+    | x    | Will be the loss (in dollars) for each iteration |
+    | Rate | Will be the default rate per iteration           |
+
+    ```{r}
+    N <- dim(Portfolio)[1]  ## gives us the number of loans in the dataset
+    rho <- 0.09    ## sets the portfolio correlation to be used in the simulation
+    M <- 20000   ## number of iterations
+    x <-numeric(M)   ## initializes loss vector
+    rate <- numeric(M)  ## initializes rate vector
+    ```
+
+    ```{r}
+    set.seed(777)  
+    for (m in 1:M) {
+        Loss <- 0
+        DefaultCount <- 0
+        DefaultRate <- 0
+      
+        Z <- rnorm(1, mean=0, sd=1)   ## generating common risk factor
+        Zvar <- rnorm(N, mean=0, sd=1)  ## generating N idiosyncratic risk factors
+      
+        for (i in 1:N) {
+          X <- sqrt(rho)*Z + sqrt(1-rho)*Zvar[i]   ## evaluating X for each loan i
+          threshold <- qnorm(Portfolio$PD[i], mean=0, sd=1)   ## setting loan i's default threshold 
+          if (X < threshold) {
+            Loss <- Loss + Portfolio$LGD[i]*Portfolio$EAD[i]   ## maintaining a running total of Losses
+            DefaultCount <- DefaultCount + 1      ## counting +1 for a defaulted loan
+            }
+          DefaultRate <- DefaultCount/N
+          }
+        x[m] <- Loss       ## capturing total portfolio loss per iteration
+        rate[m] <- DefaultRate     ## capturing total default rate per iteration
+        }
+    ```
+
+    ```{r echo=FALSE}
+    ExpectedLoss <- sum(PD*LGD*EAD)
+    ExpectedLoss
+
+    SimMean <- mean(x)
+    SimMean
+
+    resul <- data.frame(PerdidaE = ExpectedLoss, MediaE = SimMean)
+    ```
+
+    The two values are very close as we have run enough simulations for our mean to converge on the most likely outcome. Additionally, we now have a whole range of losses and their associated likelihood to consider.
